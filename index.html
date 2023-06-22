@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Многопоточный HTTP клиент + WebSocket сервер</title>
+		<style>
+			.status {
+				margin-top: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Многопоточный HTTP клиент + WebSocket сервер</h1>
+		<label for="keyword">Введите ключевое слово:</label>
+        <form onsubmit="sendKeyword()">
+            <input type="text" id="keyword"/>
+            <button onclick="sendKeyword()">Отправить</button>
+        </form>
+		<h2>Список URL:</h2>
+		<ul id="urlList"></ul>
+		<div id="downloadStatus" class="status"></div>
+		<h2>Список загруженного контента:</h2>
+		<ul id="contentList"></ul>
+		<script>
+			const socket = new WebSocket("ws://localhost:3000");
+
+			// Обработчик открытия соединения
+			socket.onopen = function () {
+				console.log("WebSocket connection opened");
+			};
+
+			// Обработчик закрытия соединения
+			socket.onclose = function () {
+				console.log("WebSocket connection closed");
+			};
+
+			// Обработчик сообщений от сервера
+			socket.onmessage = function (event) {
+				const data = JSON.parse(event.data);
+
+				if (Array.isArray(data)) {
+					// Обработка списка URL
+					const urlList = document.getElementById("urlList");
+					urlList.innerHTML = "";
+
+					data.forEach((url) => {
+						const li = document.createElement("li");
+						const link = document.createElement("a");
+						link.href = "#";
+						link.innerText = url;
+						link.onclick = function () {
+							downloadContent(url);
+						};
+						li.appendChild(link);
+						urlList.appendChild(li);
+					});
+				} else if (data.status === "progress") {
+					// Обработка статуса загрузки
+					const progressElement =
+						document.getElementById("downloadStatus");
+					progressElement.innerHTML = `Загрузка: ${data.progress} / ${data.total} байт`;
+				} else if (data.status === "finished") {
+					// Обработка завершения загрузки
+					const contentList = document.getElementById("contentList");
+					const li = document.createElement("li");
+					const link = document.createElement("a");
+					link.href = "#";
+					link.innerText = "Загруженный контент";
+					link.onclick = function () {
+						showContent(data.content);
+					};
+					li.appendChild(link);
+					contentList.appendChild(li);
+				}
+			};
+
+			// Обработчик ошибок соединения
+			socket.onerror = function (error) {
+				console.error("WebSocket error:", error);
+			};
+
+			// Отправка ключевого слова на сервер
+			function sendKeyword() {
+				const keyword = document.getElementById("keyword").value;
+				const data = { keyword }; // Создаем объект с ключевым словом
+				socket.send(JSON.stringify(data)); // Отправляем объект в виде строки JSON
+			}
+
+			// Загрузка контента по выбранному URL
+			function downloadContent(url) {
+				const threads =
+					parseInt(
+						prompt("Введите количество потоков (по умолчанию 1):")
+					) || 1;
+				const data = { action: "download", url, threads };
+				socket.send(JSON.stringify(data));
+			}
+
+			// Отображение загруженного контента
+			function showContent(content) {
+                console.log(content)
+				alert(content);
+			}
+		</script>
+	</body>
+</html>
