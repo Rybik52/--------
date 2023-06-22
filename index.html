@@ -21,6 +21,7 @@
 		<div id="downloadStatus" class="status"></div>
 		<h2>Список загруженного контента:</h2>
 		<ul id="contentList"></ul>
+        <div id="contentDisplay"></div>
 		<script>
 			const socket = new WebSocket("ws://localhost:3000");
 
@@ -87,20 +88,21 @@
 			}
 
 			// Загрузка контента по выбранному URL
-			function downloadContent(url) {
-				const threads =
-					parseInt(
-						prompt("Введите количество потоков (по умолчанию 1):")
-					) || 1;
-				const data = { action: "download", url, threads };
-				socket.send(JSON.stringify(data));
-			}
 
+            function downloadContent(url) {
+                const threads = parseInt(prompt("Введите количество потоков (по умолчанию 1):")) || 1;
+                const data = { action: "download", url, threads };
+                socket.send(JSON.stringify(data));
+            }
+            
+            
 			// Отображение загруженного контента
-			function showContent(content) {
-                console.log(content)
-				alert(content);
-			}
+            function showContent(content) {
+                const contentContainer = document.createElement('div');
+                contentContainer.innerHTML  = content;
+                document.body.appendChild(contentContainer);
+            }
+
 		</script>
 	</body>
 </html>

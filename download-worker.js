@@ -4,7 +4,7 @@ const axios = require('axios');
 const url = workerData.url;
 
 axios
-    .get(url, { responseType: 'arraybuffer', onDownloadProgress })
+    .get(url, { responseType: 'html', onDownloadProgress })
     .then((response) => {
         const content = response.data;
 
