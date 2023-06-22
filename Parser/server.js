@@ -10,10 +10,13 @@ const keywordMap = {
 	wiki: ["https://ru.wikipedia.org/wiki/", "https://en.wikipedia.org/wiki/"],
 	js: ["https://learn.javascript.ru/", "https://developer.mozilla.org/en-US/docs/Web/JavaScript"],
 };
+
 // Обработчик WebSocket соединений
 wss.on("connection", (ws) => {
-	// Обработка сообщений от клиента
+
+	// Обработка всех сообщений от клиента
 	ws.on("message", (message) => {
+
 		const data = JSON.parse(message);
 		const keyword = String(data.keyword).trim().toLowerCase();
 		const urls = keywordMap[keyword];
@@ -21,13 +24,7 @@ wss.on("connection", (ws) => {
 		if (urls) {
 			// Отправка списка URL клиенту
 			ws.send(JSON.stringify(urls));
-		}
-	});
-
-	// Добавляем обработчик сообщений от клиента, относящихся к скачиванию контента
-	ws.on("message", (message) => {
-		const data = JSON.parse(message);
-		if (data.action === "download") {
+		} else if (data.action === "download") {
 			const url = data.url;
 			const threads = data.threads || 1; // Количество потоков загрузки (по умолчанию 1)
 
@@ -49,6 +46,7 @@ wss.on("connection", (ws) => {
 			}
 		}
 	});
+
 });
 
 // Создание HTTP сервера

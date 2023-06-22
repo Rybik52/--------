@@ -4,12 +4,12 @@ const axios = require('axios');
 const url = workerData.url;
 
 axios
-    .get(url, { responseType: 'html', onDownloadProgress })
+    .get(url, { responseType: 'document', onDownloadProgress })
     .then((response) => {
         const content = response.data;
-
         // Отправка сообщения о завершении загрузки контента
         parentPort.postMessage({ status: 'finished', content });
+        console.log('Success, status code:', response.status)
     })
     .catch((error) => {
         console.error(`Error downloading content: ${error}`);

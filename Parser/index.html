@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Многопоточный HTTP клиент + WebSocket сервер</title>
+    <style>
+        .status {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Многопоточный HTTP клиент + WebSocket сервер</h1>
+    <label for="keyword">Введите ключевое слово:</label>
+    <input type="text" id="keyword"/>
+    <button onclick="sendKeyword()">Отправить</button>
+    <h2>Список URL:</h2>
+    <ul id="urlList"></ul>
+    <div id="downloadStatus" class="status"></div>
+    <h2>Список загруженного контента:</h2>
+    <ul id="contentList"></ul>
+    <script>
+        const socket = new WebSocket("ws://localhost:3000");
+        const cssList = document.getElementById("cssList"); // Добавьте список для CSS файлов
+
+        // Обработчик открытия соединения
+        socket.onopen = function () {
+            console.log("WebSocket connection opened");
+        };
+
+        // Обработчик закрытия соединения
+        socket.onclose = function () {
+            console.log("WebSocket connection closed");
+        };
+
+        // Обработчик сообщений от сервера
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (Array.isArray(data)) {
+				// Обработка списка URL
+                const urlList = document.getElementById("urlList");
+                urlList.innerHTML = "";
+				
+                data.forEach((url) => {
+					const li = document.createElement("li");
+                    const link = document.createElement("a");
+                    link.href = "#";
+                    link.innerText = url;
+                    link.onclick = function () {
+                        downloadContent(url);
+                    };
+                    li.appendChild(link);
+                    urlList.appendChild(li);
+                });
+            } else if (data.status === "progress") {
+                // Обработка статуса загрузки
+                const progressElement = document.getElementById("downloadStatus");
+                progressElement.innerHTML = `Загрузка: ${(data.progress / 1024).toFixed(2)} / ${(data.total / 1024).toFixed(2)} килобайт`;
+            } else if (data.status === "finished") {
+                // Обработка завершения загрузки
+                const contentList = document.getElementById("contentList");
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+				let parser = new DOMParser();
+				let doc = parser.parseFromString(data.content, 'text/html');
+
+                link.href = "#";
+                link.innerText = "Контент: " + doc.title;
+                link.onclick = function () {
+                    showContent(data.content);
+                };
+                li.appendChild(link);
+                contentList.appendChild(li);
+
+                // Сохранение контента в localStorage
+                localStorage.setItem("downloadedContent", data.content);
+            }
+        };
+
+        // Обработчик ошибок соединения
+        socket.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
+
+        // Отправка ключевого слова на сервер
+        function sendKeyword() {
+            const keyword = document.getElementById("keyword").value;
+            const data = { keyword };
+            socket.send(JSON.stringify(data));
+        }
+
+        // Загрузка контента по выбранному URL
+        function downloadContent(url) {
+            const threads = parseInt(prompt("Введите количество потоков (по умолчанию 1):")) || 1;
+            const data = { action: "download", url, threads, includeCss: true };
+            socket.send(JSON.stringify(data));
+        }
+
+        // Отображение загруженного контента
+        function showContent(content) {
+            const newWindow = window.open("", EventTarget, "width=viewport,height=viewport");
+            newWindow.document.write(content);
+        }
+
+        // Проверка наличия сохраненного контента в localStorage при загрузке страницы
+        window.onload = function () {
+            const downloadedContent = localStorage.getItem("downloadedContent");
+
+            if (downloadedContent) {
+				const contentList = document.getElementById("contentList");
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+				let parser = new DOMParser();
+				let doc = parser.parseFromString(downloadedContent, 'text/html');
+				
+                link.href = "#";
+                link.innerText = "Загруженный контент:" + " " + doc.title;
+                link.onclick = function () {
+                    showContent(downloadedContent);
+                };
+                li.appendChild(link);
+                contentList.appendChild(li);
+            }
+        };
+    </script>
+</body>
+</html>
