@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <title>Многопоточный HTTP клиент + WebSocket сервер</title>
-    <style>
-        .status {
-            margin-top: 10px;
-        }
-    </style>
 </head>
 <body>
     <h1>Многопоточный HTTP клиент + WebSocket сервер</h1>
     <label for="keyword">Введите ключевое слово:</label>
-    <input type="text" id="keyword"/>
-    <button onclick="sendKeyword()">Отправить</button>
+    <form>
+        <input type="text" id="keyword"/>
+        <button onclick="sendKeyword()">Отправить</button>
+    </form>
     <h2>Список URL:</h2>
     <ul id="urlList"></ul>
     <div id="downloadStatus" class="status"></div>
@@ -23,6 +20,12 @@
         const socket = new WebSocket("ws://localhost:3000");
         const cssList = document.getElementById("cssList"); // Добавьте список для CSS файлов
 
+        function domTitle(data) {
+            let parse = new DOMParser();
+            let doc = parse.parseFromString(data, 'text/html')
+            return doc.title
+        }
+        
         // Обработчик открытия соединения
         socket.onopen = function () {
             console.log("WebSocket connection opened");
@@ -62,11 +65,10 @@
                 const contentList = document.getElementById("contentList");
                 const li = document.createElement("li");
                 const link = document.createElement("a");
-				let parser = new DOMParser();
-				let doc = parser.parseFromString(data.content, 'text/html');
+		
 
                 link.href = "#";
-                link.innerText = "Контент: " + doc.title;
+                link.innerText = "Контент: " + domTitle(data.content);
                 link.onclick = function () {
                     showContent(data.content);
                 };
@@ -111,11 +113,9 @@
 				const contentList = document.getElementById("contentList");
                 const li = document.createElement("li");
                 const link = document.createElement("a");
-				let parser = new DOMParser();
-				let doc = parser.parseFromString(downloadedContent, 'text/html');
 				
                 link.href = "#";
-                link.innerText = "Загруженный контент:" + " " + doc.title;
+                link.innerText = "Загруженный контент:" + " " + domTitle(downloadedContent);
                 link.onclick = function () {
                     showContent(downloadedContent);
                 };
